@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+#turn on stats unix socket /etc/haproxy/haproxy.cfg
+
 
 import socket
 import sys
@@ -90,17 +92,33 @@ def discover_prxy_srv():
     result += ']}'
     return result
 
+#check all proxyname status
+def check_prxy_srv():
+    output = show_stat()
+    Msg = 0
+    for key in output:
+	 result= output[key][15] 
+         if result == 'OPEN' or result == 'UP':
+            continue
+         elif result == 'DOWN':
+              #print "please check %10s" %key
+              Msg += 1
+    return Msg
+
 if __name__ == "__main__":
     discover = False
     pxname = svname = value = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'dhp:s:v:')
+        opts, args = getopt.getopt(sys.argv[1:], 'dchp:s:v:')
     except getopt.GetoptError as err:
         print str(err)
         sys.exit(2)
     for o, a in opts:
         if o == '-d':
             discover = True
+            break
+        if o == '-c':
+            allstat = True
             break
         if o == '-h':
             break
@@ -114,7 +132,14 @@ if __name__ == "__main__":
         result = discover_prxy_srv()
     elif(len(pxname) * len(svname) * len(value) > 0):
         result = get_sv_stat(pxname, svname, value)
+    elif(allstat):
+        result = check_prxy_srv() 
     else:
         print ERROR_MSG
         sys.exit(2)
-    print result
+#format status output
+    if result == 'OPEN' or result == 'UP':
+        result = '1'
+    elif result == 'DOWN':
+	result = '0'
+    print result 
